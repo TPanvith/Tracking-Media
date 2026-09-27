@@ -3,7 +3,7 @@ import { z } from "zod";
 import { canReadWorkTracker, canWriteWork, getWorkspaceMembership } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 
-const entrySchema = z.object({ value: z.unknown(), note: z.string().trim().max(2000).default("") });
+const entrySchema = z.object({ value: z.string().trim().min(1).max(500), note: z.string().trim().max(2000).default("") });
 type Context = { params: Promise<{ organizationId: string; trackerId: string }> };
 
 export async function POST(request: Request, { params }: Context) {
