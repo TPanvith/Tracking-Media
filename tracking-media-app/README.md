@@ -41,7 +41,7 @@ Organization owners/admins can register an OIDC provider in Work mode. First add
 
 ## Email and team invitations
 
-Email/password accounts must verify their address. Work-space owners/admins can invite members or admins; the recipient must sign in with the invited address and accept the link. Configure `RESEND_API_KEY` and `EMAIL_FROM` with a verified sender domain before sign-up verification or invitations can send. Email API calls run server-side; credentials are not stored in browser code.
+Email/password accounts must verify their address. Work-space owners/admins can invite members or admins; the recipient must sign in with the invited address and accept the link. Configure `RESEND_API_KEY` and `EMAIL_FROM` with a verified sender domain for delivered email. In local development, when these values are unset or still placeholders, verification and invitation links are written to the dev server terminal for testing. Production always requires a real provider configuration. Email API calls run server-side; credentials are not stored in browser code.
 
 ## Current implementation boundary
 
