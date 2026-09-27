@@ -23,7 +23,7 @@ export function OrganizationInviteForm({ organizationId }: { organizationId: str
       });
       if (result.error) throw new Error(result.error.message || "Could not send the invitation.");
       formElement.reset();
-      setMessage("Invitation email sent. The recipient must verify their email and accept the invite to join.");
+      setMessage("Invitation created. The recipient must verify their email and accept the invite. In local development without email credentials, find the invite link in the dev server terminal.");
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not send the invitation.");
