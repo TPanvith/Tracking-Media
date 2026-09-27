@@ -17,7 +17,7 @@ export function SignInForm({ returnTo = "/dashboard" }: { returnTo?: string }) {
       if (mode === "signup") {
         const result = await authClient.signUp.email({ name: String(form.get("name")), email: String(form.get("email")), password: String(form.get("password")), callbackURL: returnTo });
         if (result.error) throw new Error(result.error.message || "Could not create your account.");
-        setMessage("Check your email for a verification link. After verifying, return here to sign in and continue.");
+        setMessage("Check your email for a verification link. For local development without email credentials, find the link in the dev server terminal.");
         return;
       } else {
         const result = await authClient.signIn.email({ email: String(form.get("email")), password: String(form.get("password")), callbackURL: returnTo });
