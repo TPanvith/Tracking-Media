@@ -9,14 +9,14 @@
     "lint": "eslint .",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:auth-schema": "npx @better-auth/cli@1.7.6 generate --config src/lib/auth.ts"
+    "db:auth-schema": "npx auth@latest generate --config src/lib/auth.ts --adapter prisma --dialect postgresql"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "1.7.6",
     "@better-auth/sso": "1.7.6",
     "@prisma/adapter-pg": "^7.0.0",
     "better-auth": "1.7.6",
-    "next": "16.3.7",
+    "next": "16.3.4",
     "pg": "^8.16.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -28,7 +28,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "eslint": "^9.39.0",
-    "eslint-config-next": "16.3.7",
+    "eslint-config-next": "16.3.4",
     "prisma": "^7.0.0",
     "typescript": "^5.9.3"
   }
