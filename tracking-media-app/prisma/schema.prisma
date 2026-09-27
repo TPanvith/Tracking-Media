@@ -1,0 +1,243 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum WorkTrackerVisibility {
+  TEAM
+  OWNER_AND_ADMINS
+}
+
+enum PublicReviewStatus {
+  DRAFT
+  IN_REVIEW
+  VERIFIED
+  PUBLISHED
+  NEEDS_CORRECTION
+}
+
+model User {
+  id                   String                 @id
+  name                 String
+  email                String                 @unique
+  emailVerified        Boolean                @default(false)
+  image                String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  sessions             Session[]
+  accounts             Account[]
+  members              Member[]
+  personalTrackers     PersonalTracker[]
+  publicTrackersOwned PublicTracker[]         @relation("PublicTrackerOwner")
+  publicFollows        PublicTrackerFollow[]
+  workTrackersCreated  WorkTracker[]          @relation("WorkTrackerOwner")
+  workEntries          WorkTrackerEntry[]      @relation("WorkEntryAuthor")
+  workAuditEvents      WorkAuditEvent[]
+  @@map("user")
+}
+
+model Session {
+  id                   String   @id
+  expiresAt            DateTime
+  token                String   @unique
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeOrganizationId String?
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String   @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Organization {
+  id          String                @id
+  name        String
+  slug        String                @unique
+  logo        String?
+  createdAt   DateTime              @default(now())
+  metadata    String?               @db.Text
+  members     Member[]
+  invitations Invitation[]
+  workTrackers WorkTracker[]
+  auditEvents WorkAuditEvent[]
+  @@map("organization")
+}
+
+model Member {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("member")
+  createdAt      DateTime     @default(now())
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@map("member")
+}
+
+model Invitation {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String       @default("pending")
+  expiresAt      DateTime
+  inviterId      String
+  @@index([organizationId, email])
+  @@map("invitation")
+}
+
+model PersonalTracker {
+  id          String                  @id @default(cuid())
+  ownerId     String
+  owner       User                    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title       String                  @db.VarChar(140)
+  description String                  @default("") @db.VarChar(1000)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  entries     PersonalTrackerEntry[]
+  @@index([ownerId, updatedAt])
+  @@map("personal_tracker")
+}
+
+model PersonalTrackerEntry {
+  id        String          @id @default(cuid())
+  trackerId String
+  tracker   PersonalTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  value     Json
+  note      String          @default("") @db.VarChar(2000)
+  createdAt DateTime        @default(now())
+  @@index([trackerId, createdAt])
+  @@map("personal_tracker_entry")
+}
+
+model WorkTracker {
+  id             String                @id @default(cuid())
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerId        String
+  owner          User                   @relation("WorkTrackerOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  title          String                @db.VarChar(140)
+  description    String                @default("") @db.VarChar(1000)
+  visibility     WorkTrackerVisibility @default(TEAM)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  entries        WorkTrackerEntry[]
+  @@index([organizationId, updatedAt])
+  @@index([ownerId])
+  @@map("work_tracker")
+}
+
+model WorkTrackerEntry {
+  id        String      @id @default(cuid())
+  trackerId String
+  tracker   WorkTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User        @relation("WorkEntryAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  value     Json
+  note      String      @default("") @db.VarChar(2000)
+  createdAt DateTime    @default(now())
+  @@index([trackerId, createdAt])
+  @@map("work_tracker_entry")
+}
+
+model WorkAuditEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actorId        String
+  actor          User         @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  action         String       @db.VarChar(100)
+  resourceType   String       @db.VarChar(100)
+  resourceId     String       @db.VarChar(100)
+  details        Json?
+  createdAt      DateTime     @default(now())
+  @@index([organizationId, createdAt])
+  @@map("work_audit_event")
+}
+
+model PublicTracker {
+  id          String              @id @default(cuid())
+  ownerId     String
+  owner       User                @relation("PublicTrackerOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  title       String              @db.VarChar(180)
+  description String              @default("") @db.VarChar(2000)
+  methodology String              @db.Text
+  status      PublicReviewStatus  @default(DRAFT)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  entries     PublicTrackerEntry[]
+  followers   PublicTrackerFollow[]
+  @@index([status, updatedAt])
+  @@map("public_tracker")
+}
+
+model PublicTrackerEntry {
+  id             String        @id @default(cuid())
+  trackerId      String
+  tracker        PublicTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  metric         String        @db.VarChar(180)
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  value          Json
+  unit           String?       @db.VarChar(80)
+  sourceTitle    String        @db.VarChar(300)
+  sourceUrl      String        @db.Text
+  sourcePublishedAt DateTime?
+  status         PublicReviewStatus @default(DRAFT)
+  reviewedById   String?
+  reviewNote     String?       @db.VarChar(2000)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  @@index([trackerId, metric, periodStart])
+  @@map("public_tracker_entry")
+}
+
+model PublicTrackerFollow {
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackerId String
+  tracker   PublicTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+  @@id([userId, trackerId])
+  @@index([trackerId])
+  @@map("public_tracker_follow")
+}

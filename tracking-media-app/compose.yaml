@@ -1,0 +1,20 @@
+services:
+  database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tracking
+      POSTGRES_PASSWORD: tracking
+      POSTGRES_DB: tracking_media
+    ports:
+      - "5432:5432"
+    volumes:
+      - tracking-media-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tracking -d tracking_media"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  tracking-media-postgres:

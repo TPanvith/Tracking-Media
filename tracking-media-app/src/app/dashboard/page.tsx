@@ -1,0 +1,27 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { CreateWorkspaceButton } from "@/components/create-workspace-button";
+import { PersonalTrackerForm } from "@/components/personal-tracker-form";
+import { SignOutButton } from "@/components/sign-out-button";
+
+export default async function DashboardPage(){
+  const session=await auth.api.getSession({headers:await headers()});if(!session)redirect("/sign-in");
+  const userId=session.user.id;
+  const [personal,ownedPublic,followed,memberships]=await Promise.all([
+    prisma.personalTracker.findMany({where:{ownerId:userId},orderBy:{updatedAt:"desc"},include:{_count:{select:{entries:true}}}}),
+    prisma.publicTracker.findMany({where:{ownerId:userId},orderBy:{updatedAt:"desc"},include:{_count:{select:{entries:true}}}}),
+    prisma.publicTracker.findMany({where:{status:"PUBLISHED",followers:{some:{userId}}},orderBy:{updatedAt:"desc"},include:{_count:{select:{entries:true}}}}),
+    prisma.member.findMany({where:{userId},include:{organization:true},orderBy:{createdAt:"desc"}}),
+  ]);
+  const ownedIds=new Set(ownedPublic.map(t=>t.id));const publicTrackers=[...ownedPublic,...followed.filter(t=>!ownedIds.has(t.id))];
+  return <main className="app-page"><header className="app-header"><Link className="brand" href="/dashboard">tracking<span>media</span></Link><nav><a className="nav-current" href="#personal">Personal</a><a href="#public">Public trackers</a><a href="#organizations">Organizations</a></nav><div className="profile-block"><span className="avatar">{session.user.name.slice(0,1).toUpperCase()}</span><span>{session.user.name}</span><SignOutButton/></div></header>
+    <section className="page-wrap"><div className="page-title-row"><div><p className="eyebrow">YOUR PERSONAL DASHBOARD</p><h1>Good to see you, {session.user.name.split(" ")[0]}.</h1><p className="muted">Your private tracking and followed public data. Organization work is in its own workspace.</p></div><PersonalTrackerForm/></div>
+      <section id="personal" className="dashboard-section"><div className="section-title"><div><p className="eyebrow">PRIVATE TO YOUR ACCOUNT</p><h2>Personal trackers <span className="count">{personal.length}</span></h2></div></div>{personal.length?<div className="card-grid">{personal.map(t=><article className="tracker-card" key={t.id}><div className="card-tag personal-tag">PERSONAL</div><h3>{t.title}</h3><p>{t.description||"No description added."}</p><footer><span>{t._count.entries} updates</span><span>Private to you</span></footer></article>)}</div>:<div className="empty-state"><strong>Your personal space is ready</strong><p>Create private trackers for goals, habits, projects, finances, or any data you want to keep for yourself.</p><PersonalTrackerForm/></div>}</section>
+      <section id="public" className="dashboard-section"><div className="section-title"><div><p className="eyebrow">PUBLISHED BY YOU OR FOLLOWED</p><h2>Public trackers <span className="count">{publicTrackers.length}</span></h2></div></div>{publicTrackers.length?<div className="card-grid">{publicTrackers.map(t=><article className="tracker-card public-card" key={t.id}><div className="card-tag public-tag">PUBLIC · {t.status.replaceAll("_"," ")}</div><h3>{t.title}</h3><p>{t.description||"Source-backed public data."}</p><footer><span>{t._count.entries} records</span><span>Methodology & source on tracker</span></footer></article>)}</div>:<div className="empty-state"><strong>No public trackers yet</strong><p>Public trackers will appear here when you publish one or follow a tracker. Their data is stored separately from personal and work records.</p></div>}</section>
+      <section id="organizations" className="dashboard-section org-overview"><div className="section-title"><div><p className="eyebrow">SEPARATE TEAM ACCESS</p><h2>Your organization workspaces <span className="count">{memberships.length}</span></h2></div><CreateWorkspaceButton/></div>{memberships.length?<div className="card-grid">{memberships.map(m=><Link className="tracker-card org-card" href={`/work/${m.organizationId}`} key={m.id}><div className="card-tag work-tag">WORKSPACE · {m.role.toUpperCase()}</div><h3>{m.organization.name}</h3><p>Organization-owned trackers, membership, and activity.</p><footer><span>Open work mode</span><span>→</span></footer></Link>)}</div>:<div className="empty-state work-empty-state"><strong>Work has a separate home</strong><p>Create or join an organization workspace. Personal trackers and public datasets won’t be included there.</p><CreateWorkspaceButton/></div>}</section>
+      <div className="privacy-banner"><b>Separate by design</b><span>Your dashboard combines personal trackers and public trackers you follow. Organization records only load after membership is verified inside that organization’s work area.</span></div>
+    </section></main>;
+}
