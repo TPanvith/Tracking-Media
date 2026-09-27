@@ -10,7 +10,16 @@ import { OrganizationInviteForm } from "@/components/organization-invite-form";
 
 export default async function OrganizationWorkPage({params}:{params:Promise<{organizationId:string}>}){
   const {organizationId}=await params;const{session,membership}=await getWorkspaceMembership(organizationId);if(!session)redirect("/sign-in");if(!membership)notFound();
-  const organization=await prisma.organization.findUnique({where:{id:organizationId},include:{members:{include:{user:{select:{id:true,name:true,email:true}}},orderBy:{createdAt:"asc"}}});if(!organization)notFound();
+  const organization = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    include: {
+      members: {
+        include: { user: { select: { id: true, name: true, email: true } } },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+  if (!organization) notFound();
   const trackerVisibilityScope = canManageWorkspace(membership.role)
     ? { organizationId }
     : { organizationId, OR: [{ visibility: "TEAM" as const }, { ownerId: session.user.id }] };
