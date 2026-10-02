@@ -24,7 +24,22 @@ export const auth = betterAuth({
       : [appOrigin];
   },
   database: prismaAdapter(prisma, { provider: "postgresql" }),
-  emailAndPassword: { enabled: true, minPasswordLength: 12, maxPasswordLength: 128, requireEmailVerification: true },
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 12,
+    maxPasswordLength: 128,
+    requireEmailVerification: true,
+    revokeSessionsOnPasswordReset: true,
+    async sendResetPassword({ user, url }) {
+      const link = escapeHtml(url);
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your Tracking Media password",
+        text: `Use this link to reset your password. This link expires in one hour: ${url}`,
+        html: `<p>We received a request to reset your Tracking Media password.</p><p><a href="${link}">Reset your password</a></p><p>This link expires in one hour. If you did not request this, you can ignore this email.</p>`,
+      });
+    },
+  },
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
@@ -61,3 +76,4 @@ export const auth = betterAuth({
     }),
   ],
 });
+
