@@ -73,7 +73,7 @@ export function SignInForm({ returnTo = "/dashboard", initialMode = "signin" }: 
   const title = mode === "signin" ? "Welcome back" : mode === "signup" ? "Create your account" : "Reset your password";
 
   return <main className="auth-page"><div className="auth-layout">
-    <aside className="auth-story" aria-label="Tracking Media spaces">
+    <aside className="auth-story">
       <a className="brand" href="/" aria-label="Tracking Media home">tracking<span>media</span></a>
       <div className="auth-story-copy"><p className="eyebrow">ONE PLATFORM · THREE CLEAR SPACES</p><h2>Keep every important thing in view.</h2><p>Build a rhythm for your own goals, work confidently with your team, and follow data the public can trust.</p></div>
       <div className="auth-space-list"><div><span className="space-glyph personal-glyph" aria-hidden="true">✳</span><span><b>Personal</b><small>Your goals, your space</small></span></div><div><span className="space-glyph public-glyph" aria-hidden="true">↗</span><span><b>Public</b><small>Sources in plain sight</small></span></div><div><span className="space-glyph work-glyph" aria-hidden="true">▦</span><span><b>Work</b><small>Private team workspace</small></span></div></div>
